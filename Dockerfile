@@ -1,20 +1,22 @@
 # syntax=docker/dockerfile:1.7
+
+# Terraform CLI for terraform:apply remediations, built from the pinned release
+# tag with a patched Go toolchain: the upstream release binary is linked
+# against a Go standard library with known, fixed vulnerabilities. The tag is
+# verified against its commit SHA and module downloads against go.sum and the
+# Go checksum database.
+FROM golang:1.26.9-trixie AS terraform
+ARG TERRAFORM_VERSION=1.16.6
+ARG TERRAFORM_COMMIT=7b8f1669b95119ac6021e05c9d10eae7cf75f60b
+ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOFLAGS=-mod=readonly
+RUN git clone --depth 1 --branch "v${TERRAFORM_VERSION}" https://github.com/hashicorp/terraform.git /src/terraform  && test "$(git -C /src/terraform rev-parse HEAD)" = "${TERRAFORM_COMMIT}"
+WORKDIR /src/terraform
+RUN go build -trimpath -ldflags "-s -w -X github.com/hashicorp/terraform/version.dev=no" -o /opt/terraform/terraform .  && /opt/terraform/terraform version
+
 FROM python:3.12.15-slim-trixie AS build
 COPY --from=ghcr.io/astral-sh/uv:0.12.7 /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
-RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates curl \
- && rm -rf /var/lib/apt/lists/*
-
-# Terraform CLI for terraform:apply remediations, pinned and checksum-verified.
-ARG TERRAFORM_VERSION=1.16.6
-ARG TERRAFORM_SHA256=38034b38d03096399a7a1264a14561a8029b2b496fd1f169452656e53968f1b7
-RUN curl -sSfL -o /tmp/terraform.zip \
-      "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip" \
- && echo "${TERRAFORM_SHA256}  /tmp/terraform.zip" | sha256sum -c - \
- && python -m zipfile -e /tmp/terraform.zip /opt/terraform \
- && chmod 0755 /opt/terraform/terraform \
- && rm /tmp/terraform.zip
+RUN apt-get update  && apt-get install -y --no-install-recommends git ca-certificates  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
@@ -28,7 +30,7 @@ RUN apt-get update  && apt-get upgrade -y --no-install-recommends  && rm -rf /va
  && mkdir -p /var/lib/self-healing-agents/audit /var/lib/self-healing-agents/stacks \
  && chown -R 10001:10001 /var/lib/self-healing-agents
 WORKDIR /app
-COPY --from=build /opt/terraform/terraform /usr/local/bin/terraform
+COPY --from=terraform /opt/terraform/terraform /usr/local/bin/terraform
 COPY --from=build --chown=10001:10001 /app/.venv /app/.venv
 COPY --chown=10001:10001 policies ./policies
 COPY --chown=10001:10001 configs/providers.yaml ./configs/providers.yaml
