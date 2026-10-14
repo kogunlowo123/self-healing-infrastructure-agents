@@ -44,7 +44,7 @@ jobs:
         run: |
           uv export --frozen --no-dev --no-emit-project --no-hashes > requirements.audit.txt
           uvx pip-audit -r requirements.audit.txt --strict
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: matrix.python == '3.12'
         with:
           name: coverage
@@ -164,7 +164,7 @@ jobs:
           fail-build: true
           severity-cutoff: high
           only-fixed: true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sbom
           path: sbom.cdx.json
