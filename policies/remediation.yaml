@@ -1,0 +1,162 @@
+# Remediation policy evaluated for every proposed and every executed action.
+# Combining: deny overrides, then require_approval, then allow; default deny.
+#
+# action:   k8s:restart | k8s:scale | k8s:rollout-undo | k8s:cordon | k8s:uncordon | terraform:apply
+# resource: type k8s:deployment | k8s:node | terraform:stack, with attributes
+#   environment, namespace, cluster, protected_namespace,
+#   replicas_current, replicas_target, scale_factor                    (k8s:scale)
+#   ready_nodes, ready_nodes_after, ready_ratio_after, control_plane   (k8s:cordon)
+#   stateful_destroys, destructive_count, security_changes, protection_disabled,
+#   blast_radius, risk_score, errored, applyable, has_rollback_stack   (terraform:apply)
+# environment: mode (dry_run|live), in_change_window, freeze
+# subject: id, kind (agent|user|service), roles, scopes
+# risk: 1=LOW 2=MODERATE 3=HIGH 4=CRITICAL
+#
+# Invariants enforced in code regardless of this file are listed in
+# docs/architecture/agent-specification.md (no stateful destroys, approval
+# floor for live production and Terraform changes, two-person rule for CRITICAL).
+name: remediation
+version: "2026.10.0"
+rules:
+  # ------------------------------------------------------------------ deny
+  - id: deny-stateful-destroy
+    description: Never delete or replace a stateful resource through automation.
+    effect: deny
+    actions: ["terraform:*"]
+    conditions:
+      - {attribute: resource.stateful_destroys, operator: gt, value: 0}
+
+  - id: deny-protection-disabled
+    description: Plans that switch off deletion protection, backups or encryption are not remediation.
+    effect: deny
+    actions: ["terraform:*"]
+    conditions:
+      - {attribute: resource.protection_disabled, operator: gt, value: 0}
+
+  - id: deny-terraform-outside-change-window
+    description: Live Terraform changes only inside the change window of the environment.
+    effect: deny
+    actions: ["terraform:*"]
+    conditions:
+      - {attribute: environment.mode, operator: eq, value: live}
+      - {attribute: environment.in_change_window, operator: eq, value: false}
+
+  - id: deny-during-freeze
+    description: Change freezes stop live release rollbacks and infrastructure changes.
+    effect: deny
+    actions: ["terraform:*", "k8s:rollout-undo"]
+    conditions:
+      - {attribute: environment.mode, operator: eq, value: live}
+      - {attribute: environment.freeze, operator: eq, value: true}
+
+  - id: deny-protected-namespaces
+    description: Platform namespaces are managed by their owners, not by remediation agents.
+    effect: deny
+    actions: ["k8s:*"]
+    resource_types: ["k8s:deployment"]
+    conditions:
+      - {attribute: resource.protected_namespace, operator: eq, value: true}
+
+  - id: deny-scale-to-zero
+    effect: deny
+    actions: ["k8s:scale"]
+    conditions:
+      - {attribute: resource.replicas_target, operator: lt, value: 1}
+
+  - id: deny-scale-above-ceiling
+    description: Hard ceiling on replicas a remediation may request.
+    effect: deny
+    actions: ["k8s:scale"]
+    conditions:
+      - {attribute: resource.replicas_target, operator: gt, value: 50}
+
+  - id: deny-scale-step-too-large
+    description: One remediation may at most triple a deployment.
+    effect: deny
+    actions: ["k8s:scale"]
+    conditions:
+      - {attribute: resource.scale_factor, operator: gt, value: 3}
+
+  - id: deny-cordon-control-plane
+    effect: deny
+    actions: ["k8s:cordon"]
+    conditions:
+      - {attribute: resource.control_plane, operator: eq, value: true}
+
+  - id: deny-cordon-without-capacity
+    description: Keep at least two schedulable ready nodes.
+    effect: deny
+    actions: ["k8s:cordon"]
+    conditions:
+      - {attribute: resource.ready_nodes_after, operator: lt, value: 2}
+
+  - id: deny-cordon-capacity-ratio
+    description: Keep at least two thirds of ready capacity schedulable.
+    effect: deny
+    actions: ["k8s:cordon"]
+    conditions:
+      - {attribute: resource.ready_ratio_after, operator: lt, value: 0.67}
+
+  # ------------------------------------------------------- require approval
+  - id: approve-production-live
+    description: Any live change in production needs a human approver.
+    effect: require_approval
+    actions: ["*"]
+    conditions:
+      - {attribute: resource.environment, operator: in, value: [production, prod]}
+      - {attribute: environment.mode, operator: eq, value: live}
+
+  - id: approve-terraform
+    description: Every live Terraform apply is reviewed by a human.
+    effect: require_approval
+    actions: ["terraform:apply"]
+    conditions:
+      - {attribute: environment.mode, operator: eq, value: live}
+
+  - id: approve-destructive-terraform
+    effect: require_approval
+    actions: ["terraform:apply"]
+    conditions:
+      - {attribute: resource.destructive_count, operator: gt, value: 0}
+
+  - id: approve-rollout-undo
+    description: Rolling a release back changes what code runs; a human confirms.
+    effect: require_approval
+    actions: ["k8s:rollout-undo"]
+    conditions:
+      - {attribute: environment.mode, operator: eq, value: live}
+
+  - id: approve-scale-down
+    effect: require_approval
+    actions: ["k8s:scale"]
+    conditions:
+      - {attribute: resource.scale_factor, operator: lt, value: 1}
+
+  - id: approve-high-risk
+    effect: require_approval
+    actions: ["*"]
+    conditions:
+      - {attribute: risk, operator: gte, value: 3}
+      - {attribute: environment.mode, operator: eq, value: live}
+
+  # ------------------------------------------------------------------ allow
+  - id: allow-dry-run
+    description: Server-side dry runs validate a plan without changing anything.
+    effect: allow
+    actions: ["k8s:*", "terraform:*"]
+    conditions:
+      - {attribute: environment.mode, operator: eq, value: dry_run}
+      - {attribute: subject.scopes, operator: contains_any, value: ["remediation:dry-run", "remediation:execute"]}
+
+  - id: allow-kubernetes-remediation
+    effect: allow
+    actions: ["k8s:restart", "k8s:scale", "k8s:rollout-undo", "k8s:cordon", "k8s:uncordon"]
+    conditions:
+      - {attribute: subject.scopes, operator: contains, value: "remediation:execute"}
+
+  - id: allow-terraform-apply
+    effect: allow
+    actions: ["terraform:apply"]
+    conditions:
+      - {attribute: subject.scopes, operator: contains, value: "remediation:execute"}
+      - {attribute: resource.applyable, operator: eq, value: true}

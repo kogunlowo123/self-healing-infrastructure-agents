@@ -1,0 +1,1 @@
+{"kind": "Scale", "apiVersion": "autoscaling/v1", "metadata": {"name": "checkout", "namespace": "payments", "resourceVersion": "48212100"}, "spec": {"replicas": 8}, "status": {"replicas": 4, "selector": "app.kubernetes.io/name=checkout"}}

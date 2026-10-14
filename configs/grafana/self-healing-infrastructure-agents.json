@@ -1,0 +1,75 @@
+{
+  "title": "Self-Healing Infrastructure Agents",
+  "uid": "self-healing-infrastructure-agents",
+  "schemaVersion": 39,
+  "time": {"from": "now-24h", "to": "now"},
+  "templating": {
+    "list": [
+      {"name": "datasource", "type": "datasource", "query": "prometheus"}
+    ]
+  },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Request success (5m)",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "decimals": 3}},
+      "targets": [{"expr": "1 - heal:request_errors:ratio_5m"}]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Alerts received by source and status",
+      "gridPos": {"x": 6, "y": 0, "w": 9, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "targets": [{"expr": "sum by (source, status) (rate(heal_alerts_received_total[5m]))", "legendFormat": "{{source}} {{status}}"}]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Diagnoses by playbook",
+      "gridPos": {"x": 15, "y": 0, "w": 9, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "targets": [{"expr": "sum by (playbook, outcome) (increase(heal_diagnoses_total[1h]))", "legendFormat": "{{playbook}} {{outcome}}"}]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Policy decisions by action",
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "targets": [{"expr": "sum by (action, decision) (increase(heal_policy_decisions_total[1h]))", "legendFormat": "{{action}} {{decision}}"}]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Remediation outcomes",
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "targets": [{"expr": "sum by (action, mode, outcome) (increase(heal_remediations_total[1h]))", "legendFormat": "{{action}} {{mode}} {{outcome}}"}]
+    },
+    {
+      "id": 6, "type": "stat", "title": "Rollback failures (24h)",
+      "gridPos": {"x": 0, "y": 16, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "targets": [{"expr": "sum(increase(heal_remediations_total{outcome=\"rollback_failed\"}[24h]))"}]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Remediation duration p95",
+      "gridPos": {"x": 6, "y": 16, "w": 9, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le, action) (rate(heal_remediation_duration_seconds_bucket[1h])))", "legendFormat": "{{action}}"}]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Terraform plans analysed by risk",
+      "gridPos": {"x": 15, "y": 16, "w": 9, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "targets": [{"expr": "sum by (risk) (increase(heal_terraform_analyses_total[1h]))", "legendFormat": "{{risk}}"}]
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "MCP and A2A calls",
+      "gridPos": {"x": 0, "y": 24, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "targets": [{"expr": "sum by (interface, name, outcome) (rate(heal_agent_tool_calls_total[5m]))", "legendFormat": "{{interface}} {{name}} {{outcome}}"}]
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "Webhook rejections",
+      "gridPos": {"x": 12, "y": 24, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "targets": [{"expr": "sum by (source, reason) (rate(heal_webhook_rejections_total[5m]))", "legendFormat": "{{source}} {{reason}}"}]
+    }
+  ]
+}

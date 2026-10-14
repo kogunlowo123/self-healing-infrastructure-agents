@@ -1,0 +1,90 @@
+# PrometheusRule-compatible alert rules. Load with the Prometheus Operator
+# (wrap in a PrometheusRule) or a rule_files entry.
+# SLOs (docs/architecture/agent-specification.md):
+#   availability  99.9% of API and webhook requests succeed (non-5xx) over 30 days
+#   latency       p99 alert ingestion < 2 s; p99 plan analysis < 1 s
+#   safety        0 remediations ending rollback_failed without a page
+groups:
+  - name: self-healing-infrastructure-agents.slo
+    rules:
+      - record: heal:request_errors:ratio_5m
+        expr: |
+          sum(rate(heal_http_request_duration_seconds_count{status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(heal_http_request_duration_seconds_count[5m])), 1e-9)
+
+      - record: heal:request_errors:ratio_1h
+        expr: |
+          sum(rate(heal_http_request_duration_seconds_count{status=~"5.."}[1h]))
+          /
+          clamp_min(sum(rate(heal_http_request_duration_seconds_count[1h])), 1e-9)
+
+      - alert: HealErrorBudgetBurnFast
+        expr: heal:request_errors:ratio_5m > (14.4 * 0.001) and heal:request_errors:ratio_1h > (14.4 * 0.001)
+        for: 2m
+        labels: {severity: page}
+        annotations:
+          summary: Self-healing service is burning its error budget 14x faster than sustainable
+          runbook: docs/runbooks/incident-response.md#elevated-5xx
+
+      - alert: HealIngestionLatencyHigh
+        expr: |
+          histogram_quantile(0.99, sum by (le) (
+            rate(heal_http_request_duration_seconds_bucket{route=~"/v1/alerts/.*"}[5m])
+          )) > 2
+        for: 10m
+        labels: {severity: ticket}
+        annotations:
+          summary: p99 alert ingestion above 2 s; diagnosis evidence collection is slow
+          runbook: docs/runbooks/monitoring.md#latency
+
+  - name: self-healing-infrastructure-agents.safety
+    rules:
+      - alert: HealRollbackFailed
+        expr: sum(increase(heal_remediations_total{outcome="rollback_failed"}[10m])) > 0
+        labels: {severity: page}
+        annotations:
+          summary: A remediation failed its post-check and could not be rolled back automatically
+          runbook: docs/runbooks/remediation-failure.md
+
+      - alert: HealRollbacksElevated
+        expr: |
+          sum(increase(heal_remediations_total{mode="live",outcome="rolled_back"}[1h]))
+          /
+          clamp_min(sum(increase(heal_remediations_total{mode="live"}[1h])), 1) > 0.25
+        for: 15m
+        labels: {severity: ticket}
+        annotations:
+          summary: More than a quarter of live remediations are being rolled back
+          runbook: docs/runbooks/remediation-failure.md#elevated-rollbacks
+
+      - alert: HealPolicyDenySpike
+        expr: sum(increase(heal_policy_decisions_total{decision="deny"}[30m])) > 20
+        for: 10m
+        labels: {severity: ticket}
+        annotations:
+          summary: Many remediation proposals are being denied; check playbooks and policy
+          runbook: docs/runbooks/incident-response.md#deny-spike
+
+      - alert: HealApprovalsBacklog
+        expr: sum(increase(heal_plans_expired_total[2h])) > 3
+        labels: {severity: ticket}
+        annotations:
+          summary: Remediation plans are expiring without an approval decision
+          runbook: docs/runbooks/monitoring.md#approval-backlog
+
+      - alert: HealWebhookRejections
+        expr: sum by (source, reason) (rate(heal_webhook_rejections_total[10m])) > 0.1
+        for: 10m
+        labels: {severity: ticket}
+        annotations:
+          summary: Alert notifications are being rejected (credentials, signatures or payloads)
+          runbook: docs/runbooks/incident-response.md#webhook-rejections
+
+      - alert: HealNotReady
+        expr: sum(up{job="self-healing-infrastructure-agents"}) < 2
+        for: 5m
+        labels: {severity: page}
+        annotations:
+          summary: Fewer than two self-healing replicas are being scraped
+          runbook: docs/runbooks/incident-response.md#replicas-down

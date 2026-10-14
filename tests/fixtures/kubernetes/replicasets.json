@@ -1,0 +1,47 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "ReplicaSetList",
+  "metadata": {"resourceVersion": "48212004"},
+  "items": [
+    {
+      "metadata": {
+        "annotations": {"deployment.kubernetes.io/desired-replicas": "4", "deployment.kubernetes.io/max-replicas": "5", "deployment.kubernetes.io/revision": "6"},
+        "creationTimestamp": "2026-10-01T08:02:19Z",
+        "labels": {"app.kubernetes.io/name": "checkout", "pod-template-hash": "5b8f9c7d4c"},
+        "name": "checkout-5b8f9c7d4c",
+        "namespace": "payments",
+        "ownerReferences": [{"apiVersion": "apps/v1", "blockOwnerDeletion": true, "controller": true, "kind": "Deployment", "name": "checkout", "uid": "5f0c2e8a-6b1d-4a59-9a6f-0d8b3c4e7a21"}],
+        "uid": "0a1b2c3d-1111-4222-8333-444455556666"
+      },
+      "spec": {
+        "replicas": 3,
+        "selector": {"matchLabels": {"app.kubernetes.io/name": "checkout", "pod-template-hash": "5b8f9c7d4c"}},
+        "template": {
+          "metadata": {"labels": {"app.kubernetes.io/name": "checkout", "pod-template-hash": "5b8f9c7d4c"}},
+          "spec": {"containers": [{"image": "registry.corp.test/payments/checkout@sha256:aa11bb22cc33dd44ee55ff6600112233445566778899aabbccddeeff00112233", "name": "checkout"}]}
+        }
+      },
+      "status": {"availableReplicas": 3, "readyReplicas": 3, "replicas": 3}
+    },
+    {
+      "metadata": {
+        "annotations": {"deployment.kubernetes.io/desired-replicas": "4", "deployment.kubernetes.io/max-replicas": "5", "deployment.kubernetes.io/revision": "7"},
+        "creationTimestamp": "2026-10-14T13:38:45Z",
+        "labels": {"app.kubernetes.io/name": "checkout", "pod-template-hash": "7c9d8b6f5d"},
+        "name": "checkout-7c9d8b6f5d",
+        "namespace": "payments",
+        "ownerReferences": [{"apiVersion": "apps/v1", "blockOwnerDeletion": true, "controller": true, "kind": "Deployment", "name": "checkout", "uid": "5f0c2e8a-6b1d-4a59-9a6f-0d8b3c4e7a21"}],
+        "uid": "0a1b2c3d-2222-4222-8333-444455556666"
+      },
+      "spec": {
+        "replicas": 2,
+        "selector": {"matchLabels": {"app.kubernetes.io/name": "checkout", "pod-template-hash": "7c9d8b6f5d"}},
+        "template": {
+          "metadata": {"labels": {"app.kubernetes.io/name": "checkout", "pod-template-hash": "7c9d8b6f5d"}},
+          "spec": {"containers": [{"image": "registry.corp.test/payments/checkout@sha256:3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a", "name": "checkout"}]}
+        }
+      },
+      "status": {"availableReplicas": 0, "readyReplicas": 0, "replicas": 2}
+    }
+  ]
+}

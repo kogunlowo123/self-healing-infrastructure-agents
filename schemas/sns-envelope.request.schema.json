@@ -1,0 +1,105 @@
+{
+  "$id": "https://github.com/kogunlowo123/self-healing-infrastructure-agents/schemas/sns-envelope.request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "Message": {
+      "maxLength": 262144,
+      "title": "Message",
+      "type": "string"
+    },
+    "MessageId": {
+      "maxLength": 100,
+      "title": "Messageid",
+      "type": "string"
+    },
+    "Signature": {
+      "maxLength": 2048,
+      "title": "Signature",
+      "type": "string"
+    },
+    "SignatureVersion": {
+      "title": "Signatureversion",
+      "type": "string"
+    },
+    "SigningCertURL": {
+      "maxLength": 2048,
+      "title": "Signingcerturl",
+      "type": "string"
+    },
+    "Subject": {
+      "anyOf": [
+        {
+          "maxLength": 100,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Subject"
+    },
+    "SubscribeURL": {
+      "anyOf": [
+        {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Subscribeurl"
+    },
+    "Timestamp": {
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "Token": {
+      "anyOf": [
+        {
+          "maxLength": 2048,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Token"
+    },
+    "TopicArn": {
+      "maxLength": 300,
+      "title": "Topicarn",
+      "type": "string"
+    },
+    "Type": {
+      "enum": [
+        "Notification",
+        "SubscriptionConfirmation",
+        "UnsubscribeConfirmation"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "raw_timestamp": {
+      "default": "",
+      "title": "Raw Timestamp",
+      "type": "string"
+    }
+  },
+  "required": [
+    "Type",
+    "MessageId",
+    "TopicArn",
+    "Message",
+    "Timestamp",
+    "SignatureVersion",
+    "Signature",
+    "SigningCertURL"
+  ],
+  "title": "SnsEnvelope",
+  "type": "object"
+}

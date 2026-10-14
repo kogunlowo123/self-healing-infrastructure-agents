@@ -1,0 +1,36 @@
+# Inbound authorization of agent callers when the agent identity fabric is
+# not configured (HEAL_FABRIC_URL unset). It mirrors the fabric's
+# /v1/authorize semantics so a deployment behaves the same with either
+# decision point.
+#
+# Subject attributes come from the verified agent credential: status,
+# scopes, action_in_scope (true when the requested action matches a
+# credential scope; scopes may end in a wildcard segment such as
+# remediation:*), delegated and delegation_depth.
+#
+# Actions: incidents:read, alerts:diagnose, terraform:analyze,
+#          remediation:read, remediation:propose, remediation:execute
+name: agent-access
+version: "2026.10.0"
+rules:
+  - id: deny-deep-delegation
+    description: Remediation requests may pass through at most one delegation hop.
+    effect: deny
+    actions: ["remediation:*"]
+    conditions:
+      - {attribute: subject.delegation_depth, operator: gt, value: 1}
+
+  - id: approve-delegated-changes
+    description: Proposals and executions requested under delegation need a human approver.
+    effect: require_approval
+    actions: ["remediation:execute", "remediation:propose"]
+    conditions:
+      - {attribute: subject.delegated, operator: eq, value: true}
+
+  - id: allow-scoped-actions
+    description: An action is allowed when the credential carries it as a scope.
+    effect: allow
+    actions: ["*"]
+    conditions:
+      - {attribute: subject.status, operator: eq, value: active}
+      - {attribute: subject.action_in_scope, operator: eq, value: true}

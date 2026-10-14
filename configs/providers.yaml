@@ -1,0 +1,32 @@
+# Foundation model providers for the advisory incident narrator.
+#
+# Loaded only when HEAL_PROVIDERS_FILE points at this file. The narrator
+# writes a short human-readable incident note; it never selects, parameterises
+# or approves a remediation (playbooks and policy do that deterministically).
+#
+# ${NAME} values are resolved from the environment at load time and loading
+# fails if any is unset. Credentials are referenced by variable name only.
+# Bedrock uses the pod's workload identity (IRSA), so no key is configured.
+#
+# The narrator classifies requests CONFIDENTIAL (2): infrastructure topology
+# and alert text. max_classification: 0=PUBLIC 1=INTERNAL 2=CONFIDENTIAL 3=RESTRICTED.
+providers:
+  - kind: bedrock
+    profile:
+      name: bedrock-claude
+      model: ${BEDROCK_MODEL_ID}
+      region: ${AWS_REGION}
+      max_classification: 3
+      input_cost_per_mtok: ${BEDROCK_INPUT_USD_PER_MTOK}
+      output_cost_per_mtok: ${BEDROCK_OUTPUT_USD_PER_MTOK}
+      tasks: [summarize]
+
+  - kind: anthropic
+    api_key_env: ANTHROPIC_API_KEY
+    profile:
+      name: claude
+      model: ${ANTHROPIC_MODEL}
+      max_classification: 2
+      input_cost_per_mtok: ${ANTHROPIC_INPUT_USD_PER_MTOK}
+      output_cost_per_mtok: ${ANTHROPIC_OUTPUT_USD_PER_MTOK}
+      tasks: [summarize]

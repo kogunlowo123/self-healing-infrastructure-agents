@@ -1,0 +1,215 @@
+{
+  "$defs": {
+    "ChangeAction": {
+      "enum": [
+        "no-op",
+        "create",
+        "read",
+        "update",
+        "delete",
+        "replace"
+      ],
+      "title": "ChangeAction",
+      "type": "string"
+    },
+    "ResourceChange": {
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/ChangeAction"
+        },
+        "address": {
+          "title": "Address",
+          "type": "string"
+        },
+        "changed_attributes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Changed Attributes",
+          "type": "array"
+        },
+        "protection_disabled": {
+          "default": [],
+          "description": "Safety attributes this change turns off",
+          "items": {
+            "type": "string"
+          },
+          "title": "Protection Disabled",
+          "type": "array"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "replace_paths": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Replace Paths",
+          "type": "array"
+        },
+        "security_sensitive": {
+          "title": "Security Sensitive",
+          "type": "boolean"
+        },
+        "stateful": {
+          "title": "Stateful",
+          "type": "boolean"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "address",
+        "type",
+        "provider",
+        "action",
+        "stateful",
+        "security_sensitive"
+      ],
+      "title": "ResourceChange",
+      "type": "object"
+    },
+    "RiskLevel": {
+      "description": "Action risk tier. Ordered so policies can compare with ``>=``.",
+      "enum": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "title": "RiskLevel",
+      "type": "integer"
+    }
+  },
+  "$id": "https://github.com/kogunlowo123/self-healing-infrastructure-agents/schemas/plan-analysis.response.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Risk view of a ``terraform show -json`` plan document.",
+  "properties": {
+    "applyable": {
+      "title": "Applyable",
+      "type": "boolean"
+    },
+    "blast_radius": {
+      "description": "Changed resources plus every resource that depends on them, transitively",
+      "items": {
+        "type": "string"
+      },
+      "title": "Blast Radius",
+      "type": "array"
+    },
+    "changes": {
+      "items": {
+        "$ref": "#/$defs/ResourceChange"
+      },
+      "title": "Changes",
+      "type": "array"
+    },
+    "counts": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Counts",
+      "type": "object"
+    },
+    "destructive": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Destructive",
+      "type": "array"
+    },
+    "drifted": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Drifted",
+      "type": "array"
+    },
+    "errored": {
+      "title": "Errored",
+      "type": "boolean"
+    },
+    "findings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "format_version": {
+      "title": "Format Version",
+      "type": "string"
+    },
+    "plan_digest": {
+      "title": "Plan Digest",
+      "type": "string"
+    },
+    "protection_disabled": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Protection Disabled",
+      "type": "array"
+    },
+    "risk": {
+      "$ref": "#/$defs/RiskLevel"
+    },
+    "risk_score": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Risk Score",
+      "type": "integer"
+    },
+    "security_changes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Security Changes",
+      "type": "array"
+    },
+    "stateful_deletes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Stateful Deletes",
+      "type": "array"
+    },
+    "stateful_replacements": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Stateful Replacements",
+      "type": "array"
+    },
+    "terraform_version": {
+      "title": "Terraform Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "plan_digest",
+    "format_version",
+    "terraform_version",
+    "applyable",
+    "errored",
+    "changes",
+    "counts",
+    "destructive",
+    "stateful_deletes",
+    "stateful_replacements",
+    "security_changes",
+    "protection_disabled",
+    "drifted",
+    "blast_radius",
+    "risk_score",
+    "risk",
+    "findings"
+  ],
+  "title": "PlanAnalysis",
+  "type": "object"
+}

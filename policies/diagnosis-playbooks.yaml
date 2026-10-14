@@ -1,0 +1,166 @@
+# Diagnosis playbooks. The first playbook whose match fits the alert is used.
+# Hypotheses hold when every `when` condition holds over the collected facts;
+# each `supporting` condition that also holds adds 0.05 confidence. Facts are
+# addressed as resource.<fact>. Collectors and the facts they produce:
+#   deployment: replicas, ready_replicas, updated_replicas, available_replicas,
+#               ready_ratio, revision, rollout_complete, progress_deadline_exceeded
+#   pods:       pod_count, ready_pods, pending_pods, restarting_pods, max_restart_count,
+#               crashing_pods, image_pull_errors, oom_killed_pods, oldest_pod_age_seconds
+#   rollout:    current_revision, previous_revision_available, revision_count,
+#               rollout_age_seconds
+#   node:       node_ready, node_unschedulable, node_pressure, node_pressure_count,
+#               control_plane, ready_nodes, ready_nodes_after, ready_ratio_after
+#   alert:      alert_severity, alert_name, utilization, threshold
+# Terraform remediation is never templated here: it needs a reviewed plan.
+name: diagnosis-playbooks
+version: "2026.10.0"
+playbooks:
+  - id: crashloop
+    title: Pods crash-looping
+    description: Containers restart repeatedly after start-up.
+    match:
+      alertnames: [KubePodCrashLooping, KubeDeploymentRolloutStuck, KubeDeploymentReplicasMismatch]
+      target_kind: deployment
+    collectors: [deployment, pods, rollout]
+    min_confidence: 0.6
+    hypotheses:
+      - id: bad-rollout
+        title: A recent rollout introduced the failure
+        confidence: 0.8
+        when:
+          - {attribute: resource.previous_revision_available, operator: eq, value: true}
+          - {attribute: resource.rollout_age_seconds, operator: lt, value: 3600}
+          - {attribute: resource.crashing_pods, operator: gt, value: 0}
+        supporting:
+          - {attribute: resource.progress_deadline_exceeded, operator: eq, value: true}
+          - {attribute: resource.rollout_complete, operator: eq, value: false}
+        action: {kind: "k8s:rollout-undo"}
+      - id: image-unavailable
+        title: The container image cannot be pulled
+        confidence: 0.9
+        when:
+          - {attribute: resource.image_pull_errors, operator: gt, value: 0}
+        supporting:
+          - {attribute: resource.previous_revision_available, operator: eq, value: true}
+        escalation: Restore registry access or fix the image reference in the release pipeline
+      - id: memory-limit
+        title: Containers are killed for exceeding their memory limit
+        confidence: 0.85
+        when:
+          - {attribute: resource.oom_killed_pods, operator: gt, value: 0}
+        escalation: Raise memory requests and limits through the deployment pipeline; restarts would only repeat the kill
+      - id: transient-crash
+        title: Isolated crash on a long-running release
+        confidence: 0.6
+        when:
+          - {attribute: resource.crashing_pods, operator: gt, value: 0}
+          - {attribute: resource.ready_ratio, operator: gte, value: 0.5}
+        supporting:
+          - {attribute: resource.rollout_age_seconds, operator: gte, value: 86400}
+        action: {kind: "k8s:restart"}
+
+  - id: saturation
+    title: Workload saturated
+    description: Utilization above target while the deployment is otherwise healthy.
+    match:
+      alertnames: [KubeHpaMaxedOut, HighCpuUtilization, HighRequestLatency, HighRequestQueueDepth]
+      target_kind: deployment
+    collectors: [deployment, pods, alert]
+    min_confidence: 0.65
+    hypotheses:
+      - id: capacity
+        title: Demand exceeds current capacity
+        confidence: 0.75
+        when:
+          - {attribute: resource.ready_ratio, operator: gte, value: 0.9}
+          - {attribute: resource.utilization, operator: gt, value: 0.7}
+          - {attribute: resource.crashing_pods, operator: eq, value: 0}
+        supporting:
+          - {attribute: resource.pending_pods, operator: eq, value: 0}
+          - {attribute: resource.utilization, operator: gt, value: 0.9}
+        action:
+          kind: "k8s:scale"
+          scale: {target_utilization: 0.6, max_step: 2.0, max_replicas: 50}
+      - id: unhealthy-pods
+        title: Saturation caused by pods that are not ready
+        confidence: 0.7
+        when:
+          - {attribute: resource.ready_ratio, operator: lt, value: 0.9}
+        escalation: Investigate why pods are not ready before adding capacity
+
+  - id: memory-leak
+    title: Memory growth towards the container limit
+    description: Long-running pods approach their memory limit without OOM kills yet.
+    match:
+      alertnames: [ContainerMemoryNearLimit, KubeContainerMemoryHigh]
+      target_kind: deployment
+    collectors: [deployment, pods, alert]
+    min_confidence: 0.6
+    hypotheses:
+      - id: leak
+        title: Memory grows with uptime (leak); a rolling restart buys time
+        confidence: 0.7
+        when:
+          - {attribute: resource.oldest_pod_age_seconds, operator: gt, value: 21600}
+          - {attribute: resource.utilization, operator: gt, value: 0.85}
+          - {attribute: resource.ready_ratio, operator: gte, value: 0.9}
+          - {attribute: resource.replicas, operator: gte, value: 2}
+        supporting:
+          - {attribute: resource.oom_killed_pods, operator: eq, value: 0}
+        action: {kind: "k8s:restart"}
+      - id: undersized
+        title: Fresh pods already near the limit; limits are undersized
+        confidence: 0.75
+        when:
+          - {attribute: resource.oldest_pod_age_seconds, operator: lte, value: 21600}
+          - {attribute: resource.utilization, operator: gt, value: 0.85}
+        escalation: Raise memory limits through the deployment pipeline
+
+  - id: node-unhealthy
+    title: Node not ready or under resource pressure
+    description: Stop scheduling onto a failing node while capacity remains.
+    match:
+      alertnames: [KubeNodeNotReady, KubeNodeUnreachable, NodeDiskPressure, NodeMemoryPressure, NodePIDPressure, NodeFilesystemAlmostOutOfSpace]
+      target_kind: node
+    collectors: [node]
+    min_confidence: 0.6
+    hypotheses:
+      - id: node-failing
+        title: Node is failing; cordon it so new pods land elsewhere
+        confidence: 0.75
+        when:
+          - {attribute: resource.node_unschedulable, operator: eq, value: false}
+          - {attribute: resource.control_plane, operator: eq, value: false}
+          - {attribute: resource.ready_nodes_after, operator: gte, value: 2}
+        supporting:
+          - {attribute: resource.node_ready, operator: eq, value: false}
+          - {attribute: resource.node_pressure_count, operator: gt, value: 0}
+        action: {kind: "k8s:cordon"}
+      - id: insufficient-capacity
+        title: Node is failing but the cluster lacks spare capacity
+        confidence: 0.7
+        when:
+          - {attribute: resource.ready_nodes_after, operator: lt, value: 2}
+        escalation: Add node capacity before cordoning; cordoning now would strand workloads
+      - id: already-cordoned
+        title: Node is already cordoned
+        confidence: 0.65
+        when:
+          - {attribute: resource.node_unschedulable, operator: eq, value: true}
+        escalation: Drain and replace the node through the node group lifecycle
+
+  - id: cloud-capacity
+    title: Managed cloud resource near capacity
+    description: CloudWatch alarms on managed services; the fix is a reviewed Terraform change.
+    match:
+      alertnames: ["*FreeStorageSpace*", "*CPUUtilization*", "*FreeableMemory*", "*DatabaseConnections*"]
+      target_kind: cloud_resource
+    collectors: [alert]
+    min_confidence: 0.6
+    hypotheses:
+      - id: resize-required
+        title: The managed resource needs more capacity
+        confidence: 0.7
+        when:
+          - {attribute: resource.alert_name, operator: exists, value: true}
+        escalation: Submit a reviewed Terraform plan for the stack via POST /v1/remediations; it is analysed and approval-gated

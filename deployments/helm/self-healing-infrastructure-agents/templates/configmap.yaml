@@ -1,0 +1,50 @@
+{{- $h := .Values.heal -}}
+{{- if not (has $h.executionMode (list "dry_run" "live")) }}{{ fail "heal.executionMode must be dry_run or live" }}{{ end -}}
+{{- if not (or $h.fabricUrl (and $h.agent.issuer $h.agent.jwksUrl)) }}{{ fail "heal.fabricUrl or heal.agent.issuer + heal.agent.jwksUrl is required" }}{{ end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "heal.fullname" . }}
+  labels: {{- include "heal.labels" . | nindent 4 }}
+data:
+  HEAL_ENVIRONMENT: {{ $h.environment | quote }}
+  HEAL_PUBLIC_URL: {{ required "heal.publicUrl is required" $h.publicUrl | quote }}
+  HEAL_EXECUTION_MODE: {{ $h.executionMode | quote }}
+  HEAL_AUTO_PROPOSE: {{ $h.autoPropose | quote }}
+  HEAL_AUTO_EXECUTE: {{ $h.autoExecute | quote }}
+  HEAL_DEFAULT_ALERT_ENVIRONMENT: {{ $h.defaultAlertEnvironment | quote }}
+  HEAL_PLAN_TTL_SECONDS: {{ $h.planTtlSeconds | quote }}
+  HEAL_ROLLOUT_TIMEOUT_SECONDS: {{ $h.rolloutTimeoutSeconds | quote }}
+  HEAL_LOG_LEVEL: {{ $h.logLevel | quote }}
+  HEAL_OPERATOR_ISSUER: {{ required "heal.operator.issuer is required" $h.operator.issuer | quote }}
+  HEAL_OPERATOR_AUDIENCE: {{ required "heal.operator.audience is required" $h.operator.audience | quote }}
+  HEAL_OPERATOR_JWKS_URL: {{ required "heal.operator.jwksUrl is required" $h.operator.jwksUrl | quote }}
+  HEAL_OPERATOR_ROLES_CLAIM: {{ $h.operator.rolesClaim | quote }}
+  HEAL_AGENT_ID: {{ required "heal.agentId is required" $h.agentId | quote }}
+  {{- with $h.fabricUrl }}
+  HEAL_FABRIC_URL: {{ . | quote }}
+  {{- end }}
+  {{- with $h.agent.issuer }}
+  HEAL_AGENT_ISSUER: {{ . | quote }}
+  {{- end }}
+  {{- with $h.agent.jwksUrl }}
+  HEAL_AGENT_JWKS_URL: {{ . | quote }}
+  {{- end }}
+  HEAL_AGENT_AUDIENCE: {{ $h.agent.audience | quote }}
+  HEAL_AGENT_SCOPES: {{ $h.agentScopes | toJson | quote }}
+  HEAL_SNS_TOPIC_ARNS: {{ $h.snsTopicArns | toJson | quote }}
+  HEAL_PROTECTED_NAMESPACES: {{ $h.protectedNamespaces | toJson | quote }}
+  HEAL_MCP_ALLOWED_HOSTS: {{ $h.mcpAllowedHosts | toJson | quote }}
+  HEAL_KUBE_API_URL: "https://kubernetes.default.svc"
+  HEAL_KUBE_TOKEN_FILE: /var/run/secrets/heal/kubernetes/token
+  HEAL_KUBE_CA_FILE: /var/run/secrets/heal/kubernetes/ca.crt
+  HEAL_WORKLOAD_TOKEN_FILE: /var/run/secrets/heal/fabric/token
+  HEAL_TERRAFORM_ROOT: /var/lib/self-healing-agents/stacks
+  HEAL_TERRAFORM_TIMEOUT_SECONDS: {{ .Values.terraform.timeoutSeconds | quote }}
+  HEAL_AUDIT_KEY_FILE: {{ printf "/etc/self-healing-agents/audit-key/%s" (required "secrets.auditKeyFile is required" .Values.secrets.auditKeyFile) | quote }}
+  {{- if $h.providersEnabled }}
+  HEAL_PROVIDERS_FILE: /app/configs/providers.yaml
+  {{- end }}
+  {{- with $h.otlpEndpoint }}
+  HEAL_OTLP_ENDPOINT: {{ . | quote }}
+  {{- end }}

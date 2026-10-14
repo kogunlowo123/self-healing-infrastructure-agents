@@ -1,0 +1,70 @@
+# Local development stack: the self-healing service + PostgreSQL + an OIDC
+# provider that plays both the enterprise IdP (operators) and the agent
+# identity fabric issuer (agents), + an OpenTelemetry collector.
+#
+# Execution mode is dry_run and the audit key is ephemeral
+# (HEAL_DEV_EPHEMERAL_KEYS); never use this configuration outside a developer
+# workstation. Without a Kubernetes API the service still ingests and
+# diagnoses alerts; evidence collection reports the missing cluster and the
+# diagnosis escalates instead of acting. Point HEAL_KUBE_API_URL,
+# HEAL_KUBE_TOKEN_FILE and HEAL_KUBE_CA_FILE at a local cluster (kind, k3d) to
+# exercise remediation dry runs end to end.
+name: self-healing-infrastructure-agents
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_DB: heal
+      POSTGRES_USER: heal
+      POSTGRES_PASSWORD: heal-local-only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U heal -d heal"]
+      interval: 5s
+      retries: 10
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  oidc:
+    image: ghcr.io/navikt/mock-oauth2-server:2.1.10
+    environment:
+      SERVER_PORT: "8080"
+    ports:
+      - "8081:8080"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./deployments/docker/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+
+  heal:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      oidc:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    environment:
+      HEAL_ENVIRONMENT: development
+      HEAL_PUBLIC_URL: http://localhost:8080
+      HEAL_DEV_EPHEMERAL_KEYS: "true"
+      HEAL_EXECUTION_MODE: dry_run
+      HEAL_DATABASE_URL: postgresql+asyncpg://heal:heal-local-only@postgres:5432/heal
+      HEAL_DEFAULT_ALERT_ENVIRONMENT: development
+      HEAL_OPERATOR_ISSUER: http://oidc:8080/operators
+      HEAL_OPERATOR_AUDIENCE: self-healing-agents
+      HEAL_OPERATOR_JWKS_URL: http://oidc:8080/operators/jwks
+      HEAL_AGENT_ID: spiffe://agents.local/agent/platform/self-healer
+      HEAL_AGENT_ISSUER: http://oidc:8080/fabric
+      HEAL_AGENT_JWKS_URL: http://oidc:8080/fabric/jwks
+      HEAL_ALERTMANAGER_TOKEN: alertmanager-local-only
+      HEAL_MCP_ALLOWED_HOSTS: '["localhost:8080", "localhost"]'
+      HEAL_AUDIT_LOG_PATH: /var/lib/self-healing-agents/audit/audit.jsonl
+      HEAL_OTLP_ENDPOINT: http://otel-collector:4317
+      HEAL_LOG_LEVEL: DEBUG
+
+volumes:
+  pgdata:

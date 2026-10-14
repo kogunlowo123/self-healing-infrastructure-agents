@@ -1,0 +1,116 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/kogunlowo123/self-healing-infrastructure-agents
+  tag: ""  # defaults to .Chart.AppVersion
+  digest: ""  # set to pin an immutable sha256 digest; takes precedence over tag
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: self-healing-infrastructure-agents
+  # Cloud workload identity bindings used by Terraform remediation and audit shipping:
+  #   eks.amazonaws.com/role-arn (AWS IRSA)
+  #   azure.workload.identity/client-id (Azure Workload ID)
+  #   iam.gke.io/gcp-service-account (GKE Workload Identity)
+  annotations: {}
+
+podLabels: {}
+
+# Deployment-specific values marked REQUIRED have no default; the chart
+# refuses to render until they are set (helm install --values <env>.yaml).
+heal:
+  environment: production
+  publicUrl: ""  # REQUIRED: external HTTPS URL (A2A agent card, MCP host check)
+  # dry_run (default) or live. Live execution still requires policy approval
+  # and, for production and Terraform, human approvals. See
+  # docs/runbooks/enabling-live-execution.md before changing it.
+  executionMode: dry_run
+  autoPropose: true
+  autoExecute: true
+  defaultAlertEnvironment: production
+  planTtlSeconds: 3600
+  rolloutTimeoutSeconds: 600
+  logLevel: INFO
+  otlpEndpoint: ""  # optional OTLP gRPC endpoint
+  operator:
+    issuer: ""  # REQUIRED: enterprise OIDC issuer for operators and approvers
+    audience: ""  # REQUIRED
+    jwksUrl: ""  # REQUIRED
+    rolesClaim: roles
+  agentId: ""  # REQUIRED: SPIFFE ID this service is registered under in the identity fabric
+  # Either fabricUrl (decisions delegated to the identity fabric) or agent.issuer
+  # + agent.jwksUrl (local verification and policies/agent-access.yaml) is REQUIRED.
+  fabricUrl: ""
+  agent:
+    issuer: ""
+    jwksUrl: ""
+    audience: agent-platform
+  agentScopes: ["remediation:propose", "remediation:dry-run", "remediation:execute"]
+  snsTopicArns: []  # CloudWatch alarm topics allowed to deliver (SignatureVersion 2)
+  protectedNamespaces: ["kube-system", "kube-public", "kube-node-lease"]
+  mcpAllowedHosts: []  # defaults to the publicUrl host
+  providersEnabled: false  # mount configs/providers.yaml and enable the advisory narrator
+
+# Secrets are created by the platform secret operator (External Secrets,
+# Secrets Store CSI) from the cloud secret manager provisioned by Terraform.
+secrets:
+  database: self-healing-agents-database  # key DATABASE_URL
+  auditKey: self-healing-agents-audit-key  # Ed25519 PEM audit signing key
+  auditKeyFile: ""  # REQUIRED: file name of the audit key within secrets.auditKey
+  alertmanager: self-healing-agents-alertmanager  # key ALERTMANAGER_TOKEN
+  providers: ""  # optional secret with provider env vars (e.g. ANTHROPIC_API_KEY)
+
+terraform:
+  # PersistentVolumeClaim (ReadWriteMany, e.g. EFS/Azure Files/Filestore) where the
+  # delivery pipeline places stack directories and saved plans. Empty disables
+  # terraform:apply remediation (proposals for unknown stacks are refused).
+  stacksClaim: ""
+  timeoutSeconds: 1800
+
+audit:
+  storageClassName: ""
+  size: 10Gi
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  host: ""  # required when ingress.enabled
+  tlsSecret: self-healing-agents-tls
+  annotations: {}
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 384Mi
+  limits:
+    cpu: "1"
+    memory: 768Mi
+
+podDisruptionBudget:
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  # Namespaces whose pods may call the service (agents, Alertmanager).
+  allowedNamespaceLabels:
+    agent-platform/member: "true"
+  monitoringNamespaceLabels:
+    kubernetes.io/metadata.name: observability
+  ingressNamespaceLabels:
+    kubernetes.io/metadata.name: ingress-nginx
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
+
+nodeSelector: {}
+tolerations: []
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway

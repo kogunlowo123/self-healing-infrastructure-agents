@@ -1,0 +1,47 @@
+{
+  "$id": "https://github.com/kogunlowo123/self-healing-infrastructure-agents/schemas/ingest-result.response.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "accepted": {
+      "title": "Accepted",
+      "type": "integer"
+    },
+    "opened": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Opened",
+      "type": "array"
+    },
+    "plans": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Plans",
+      "type": "array"
+    },
+    "resolved": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Resolved",
+      "type": "array"
+    },
+    "updated": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Updated",
+      "type": "array"
+    }
+  },
+  "required": [
+    "accepted",
+    "opened",
+    "updated",
+    "resolved",
+    "plans"
+  ],
+  "title": "IngestResult",
+  "type": "object"
+}

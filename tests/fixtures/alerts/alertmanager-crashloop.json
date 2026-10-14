@@ -1,0 +1,35 @@
+{
+  "version": "4",
+  "groupKey": "{}/{severity=~\"warning|critical\"}:{alertname=\"KubePodCrashLooping\", namespace=\"payments\"}",
+  "truncatedAlerts": 0,
+  "status": "firing",
+  "receiver": "self-healing",
+  "groupLabels": {"alertname": "KubePodCrashLooping", "namespace": "payments"},
+  "commonLabels": {
+    "alertname": "KubePodCrashLooping",
+    "cluster": "eks-prod-use1",
+    "container": "checkout",
+    "environment": "staging",
+    "job": "kube-state-metrics",
+    "namespace": "payments",
+    "severity": "warning"
+  },
+  "commonAnnotations": {
+    "runbook_url": "https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubepodcrashlooping"
+  },
+  "externalURL": "https://alertmanager.monitoring.corp.test",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {"pod": "checkout-7c9d8b6f5d-x2kq9"},
+      "annotations": {
+        "description": "Pod payments/checkout-7c9d8b6f5d-x2kq9 (checkout) is in waiting state (reason: \"CrashLoopBackOff\").",
+        "summary": "Pod is crash looping."
+      },
+      "startsAt": "2026-10-14T13:45:30.123Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "https://prometheus.monitoring.corp.test/graph?g0.expr=max_over_time%28kube_pod_container_status_waiting_reason%5B5m%5D%29+%3E%3D+1",
+      "fingerprint": "8f2b7c1d9e4a6b30"
+    }
+  ]
+}

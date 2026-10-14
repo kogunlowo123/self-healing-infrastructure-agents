@@ -1,0 +1,30 @@
+{
+  "AlarmName": "orders-db-FreeStorageSpace-low",
+  "AlarmDescription": "Free storage below 10 GiB on the orders database. severity:critical environment:production",
+  "AWSAccountId": "123456789012",
+  "AlarmConfigurationUpdatedTimestamp": "2026-09-30T12:00:00.000+0000",
+  "NewStateValue": "ALARM",
+  "NewStateReason": "Threshold Crossed: 1 out of the last 1 datapoints [9.6E9 (14/10/26 13:55:00)] was less than the threshold (1.073741824E10) (minimum 1 datapoint for OK -> ALARM transition).",
+  "StateChangeTime": "2026-10-14T13:56:02.711+0000",
+  "Region": "US East (N. Virginia)",
+  "AlarmArn": "arn:aws:cloudwatch:us-east-1:123456789012:alarm:orders-db-FreeStorageSpace-low",
+  "OldStateValue": "OK",
+  "OKActions": [],
+  "AlarmActions": ["arn:aws:sns:us-east-1:123456789012:infra-alarms"],
+  "InsufficientDataActions": [],
+  "Trigger": {
+    "MetricName": "FreeStorageSpace",
+    "Namespace": "AWS/RDS",
+    "StatisticType": "Statistic",
+    "Statistic": "MINIMUM",
+    "Unit": null,
+    "Dimensions": [{"value": "orders", "name": "DBInstanceIdentifier"}],
+    "Period": 300,
+    "EvaluationPeriods": 1,
+    "DatapointsToAlarm": 1,
+    "ComparisonOperator": "LessThanThreshold",
+    "Threshold": 10737418240.0,
+    "TreatMissingData": "missing",
+    "EvaluateLowSampleCountPercentile": ""
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "apiVersion": "v1",
+  "kind": "PodList",
+  "metadata": {"resourceVersion": "48212010"},
+  "items": [
+    {
+      "metadata": {"name": "checkout-7c9d8b6f5d-x2kq9", "namespace": "payments", "labels": {"app.kubernetes.io/name": "checkout", "pod-template-hash": "7c9d8b6f5d"}},
+      "spec": {"nodeName": "ip-10-20-31-17.ec2.internal", "containers": [{"name": "checkout", "image": "registry.corp.test/payments/checkout@sha256:3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a"}]},
+      "status": {
+        "phase": "Running",
+        "startTime": "2026-10-14T13:38:47Z",
+        "conditions": [{"type": "Ready", "status": "False"}, {"type": "PodScheduled", "status": "True"}],
+        "containerStatuses": [
+          {"name": "checkout", "ready": false, "restartCount": 6,
+           "state": {"waiting": {"reason": "CrashLoopBackOff", "message": "back-off 2m40s restarting failed container"}},
+           "lastState": {"terminated": {"exitCode": 1, "reason": "Error", "startedAt": "2026-10-14T13:49:02Z", "finishedAt": "2026-10-14T13:49:04Z"}}}
+        ]
+      }
+    },
+    {
+      "metadata": {"name": "checkout-7c9d8b6f5d-p7wzm", "namespace": "payments", "labels": {"app.kubernetes.io/name": "checkout", "pod-template-hash": "7c9d8b6f5d"}},
+      "spec": {"nodeName": "ip-10-20-42-8.ec2.internal", "containers": [{"name": "checkout", "image": "registry.corp.test/payments/checkout@sha256:3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a"}]},
+      "status": {
+        "phase": "Running",
+        "startTime": "2026-10-14T13:38:49Z",
+        "conditions": [{"type": "Ready", "status": "False"}],
+        "containerStatuses": [
+          {"name": "checkout", "ready": false, "restartCount": 5,
+           "state": {"waiting": {"reason": "CrashLoopBackOff"}},
+           "lastState": {"terminated": {"exitCode": 1, "reason": "Error"}}}
+        ]
+      }
+    },
+    {
+      "metadata": {"name": "checkout-5b8f9c7d4c-9fj2d", "namespace": "payments", "labels": {"app.kubernetes.io/name": "checkout", "pod-template-hash": "5b8f9c7d4c"}},
+      "spec": {"nodeName": "ip-10-20-31-17.ec2.internal", "containers": [{"name": "checkout", "image": "registry.corp.test/payments/checkout@sha256:aa11bb22cc33dd44ee55ff6600112233445566778899aabbccddeeff00112233"}]},
+      "status": {
+        "phase": "Running",
+        "startTime": "2026-10-01T08:02:30Z",
+        "conditions": [{"type": "Ready", "status": "True"}],
+        "containerStatuses": [{"name": "checkout", "ready": true, "restartCount": 0, "state": {"running": {"startedAt": "2026-10-01T08:02:41Z"}}, "lastState": {}}]
+      }
+    },
+    {
+      "metadata": {"name": "checkout-5b8f9c7d4c-4hqlt", "namespace": "payments", "labels": {"app.kubernetes.io/name": "checkout", "pod-template-hash": "5b8f9c7d4c"}},
+      "spec": {"nodeName": "ip-10-20-53-90.ec2.internal", "containers": [{"name": "checkout", "image": "registry.corp.test/payments/checkout@sha256:aa11bb22cc33dd44ee55ff6600112233445566778899aabbccddeeff00112233"}]},
+      "status": {
+        "phase": "Running",
+        "startTime": "2026-10-01T08:02:31Z",
+        "conditions": [{"type": "Ready", "status": "True"}],
+        "containerStatuses": [{"name": "checkout", "ready": true, "restartCount": 1, "state": {"running": {"startedAt": "2026-10-09T22:15:10Z"}}, "lastState": {"terminated": {"exitCode": 137, "reason": "OOMKilled"}}}]
+      }
+    }
+  ]
+}

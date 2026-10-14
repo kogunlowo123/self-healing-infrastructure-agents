@@ -1,0 +1,39 @@
+{
+  "$defs": {
+    "ApprovalDecision": {
+      "enum": [
+        "approve",
+        "reject"
+      ],
+      "title": "ApprovalDecision",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/kogunlowo123/self-healing-infrastructure-agents/schemas/approval.request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "comment": {
+      "maxLength": 2000,
+      "minLength": 3,
+      "title": "Comment",
+      "type": "string"
+    },
+    "decision": {
+      "$ref": "#/$defs/ApprovalDecision"
+    },
+    "plan_digest": {
+      "description": "Digest of the plan version reviewed",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Plan Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "decision",
+    "plan_digest",
+    "comment"
+  ],
+  "title": "ApprovalRequest",
+  "type": "object"
+}

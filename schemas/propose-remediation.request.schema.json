@@ -1,0 +1,175 @@
+{
+  "$defs": {
+    "ActionKind": {
+      "description": "Remediation actions. Values double as policy actions and fabric scopes.",
+      "enum": [
+        "k8s:restart",
+        "k8s:scale",
+        "k8s:rollout-undo",
+        "k8s:cordon",
+        "k8s:uncordon",
+        "terraform:apply"
+      ],
+      "title": "ActionKind",
+      "type": "string"
+    },
+    "ActionSpec": {
+      "additionalProperties": false,
+      "description": "What to do, to what, and why.",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ActionKind"
+        },
+        "plan_file": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "terraform:apply only; saved plan file",
+          "title": "Plan File"
+        },
+        "reason": {
+          "maxLength": 2000,
+          "minLength": 3,
+          "title": "Reason",
+          "type": "string"
+        },
+        "replicas": {
+          "anyOf": [
+            {
+              "maximum": 1000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "k8s:scale only",
+          "title": "Replicas"
+        },
+        "rollback_stack": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "terraform:apply only; stack directory holding the last-known-good configuration (same backend). If the post-check fails it is planned fresh and applied only when that plan is non-destructive",
+          "title": "Rollback Stack"
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "reason"
+      ],
+      "title": "ActionSpec",
+      "type": "object"
+    },
+    "Target": {
+      "additionalProperties": false,
+      "description": "The infrastructure object an alert is about and a remediation acts on.",
+      "properties": {
+        "cluster": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cluster"
+        },
+        "environment": {
+          "default": "production",
+          "maxLength": 40,
+          "minLength": 1,
+          "title": "Environment",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/TargetKind"
+        },
+        "name": {
+          "maxLength": 253,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "maxLength": 63,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Namespace"
+        }
+      },
+      "required": [
+        "kind",
+        "name"
+      ],
+      "title": "Target",
+      "type": "object"
+    },
+    "TargetKind": {
+      "enum": [
+        "deployment",
+        "node",
+        "terraform_stack",
+        "cloud_resource"
+      ],
+      "title": "TargetKind",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/kogunlowo123/self-healing-infrastructure-agents/schemas/propose-remediation.request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "$ref": "#/$defs/ActionSpec"
+    },
+    "incident_id": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Incident Id"
+    }
+  },
+  "required": [
+    "action"
+  ],
+  "title": "ProposeRemediation",
+  "type": "object"
+}

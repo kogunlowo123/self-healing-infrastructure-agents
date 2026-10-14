@@ -1,0 +1,37 @@
+# Routes actionable alerts from the Prometheus Operator's Alertmanager to the
+# self-healing service. The bearer credential is the same secret the service
+# reads as HEAL_ALERTMANAGER_TOKEN; external-secrets.yaml syncs a copy into
+# the observability namespace where Alertmanager runs.
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: self-healing
+  namespace: observability
+  labels:
+    alertmanagerConfig: self-healing
+spec:
+  route:
+    receiver: self-healing
+    groupBy: ["alertname", "namespace", "cluster"]
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 1h
+    matchers:
+      - name: severity
+        matchType: "=~"
+        value: "warning|critical"
+      - name: alertname
+        matchType: "=~"
+        value: "KubePodCrashLooping|KubeDeploymentRolloutStuck|KubeDeploymentReplicasMismatch|KubeHpaMaxedOut|HighCpuUtilization|HighRequestLatency|HighRequestQueueDepth|ContainerMemoryNearLimit|KubeContainerMemoryHigh|KubeNodeNotReady|KubeNodeUnreachable|NodeDiskPressure|NodeMemoryPressure|NodePIDPressure|NodeFilesystemAlmostOutOfSpace"
+  receivers:
+    - name: self-healing
+      webhookConfigs:
+        - url: http://heal-self-healing-infrastructure-agents.self-healing.svc/v1/alerts/alertmanager
+          sendResolved: true
+          maxAlerts: 50
+          httpConfig:
+            authorization:
+              type: Bearer
+              credentials:
+                name: self-healing-agents-alertmanager
+                key: ALERTMANAGER_TOKEN

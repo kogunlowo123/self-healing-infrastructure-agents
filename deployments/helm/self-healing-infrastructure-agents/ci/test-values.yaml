@@ -1,0 +1,24 @@
+# Values used by CI to render and schema-validate the chart (helm lint,
+# helm template | kubeconform). They describe a complete, valid deployment.
+heal:
+  publicUrl: https://heal.agents.ci.internal
+  operator:
+    issuer: https://login.ci.internal
+    audience: self-healing-agents
+    jwksUrl: https://login.ci.internal/jwks
+  agentId: spiffe://agents.ci.internal/agent/platform/self-healer
+  fabricUrl: https://identity.agents.ci.internal
+  snsTopicArns:
+    - arn:aws:sns:us-east-1:111122223333:infra-alarms
+  providersEnabled: true
+secrets:
+  auditKeyFile: audit-2026-10.pem
+  providers: self-healing-agents-providers
+terraform:
+  stacksClaim: self-healing-agents-stacks
+ingress:
+  enabled: true
+  className: nginx
+  host: heal.agents.ci.internal
+serviceMonitor:
+  enabled: true

@@ -1,0 +1,12 @@
+{
+  "apiVersion": "v1",
+  "kind": "NodeList",
+  "metadata": {"resourceVersion": "48210600"},
+  "items": [
+    {"metadata": {"name": "ip-10-20-31-17.ec2.internal", "resourceVersion": "48210555", "labels": {}}, "spec": {}, "status": {"conditions": [{"type": "DiskPressure", "status": "True"}, {"type": "Ready", "status": "True"}]}},
+    {"metadata": {"name": "ip-10-20-42-8.ec2.internal", "resourceVersion": "48210556", "labels": {}}, "spec": {}, "status": {"conditions": [{"type": "Ready", "status": "True"}]}},
+    {"metadata": {"name": "ip-10-20-53-90.ec2.internal", "resourceVersion": "48210557", "labels": {}}, "spec": {}, "status": {"conditions": [{"type": "Ready", "status": "True"}]}},
+    {"metadata": {"name": "ip-10-20-64-3.ec2.internal", "resourceVersion": "48210558", "labels": {}}, "spec": {"unschedulable": true}, "status": {"conditions": [{"type": "Ready", "status": "True"}]}},
+    {"metadata": {"name": "ip-10-20-1-10.ec2.internal", "resourceVersion": "48210559", "labels": {"node-role.kubernetes.io/control-plane": ""}}, "spec": {}, "status": {"conditions": [{"type": "Ready", "status": "True"}]}}
+  ]
+}

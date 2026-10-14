@@ -1,0 +1,203 @@
+{
+  "$defs": {
+    "AlarmTrigger": {
+      "properties": {
+        "ComparisonOperator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comparisonoperator"
+        },
+        "Dimensions": {
+          "items": {
+            "$ref": "#/$defs/Dimension"
+          },
+          "maxItems": 30,
+          "title": "Dimensions",
+          "type": "array"
+        },
+        "EvaluationPeriods": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evaluationperiods"
+        },
+        "MetricName": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metricname"
+        },
+        "Namespace": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Namespace"
+        },
+        "Period": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Period"
+        },
+        "Statistic": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Statistic"
+        },
+        "Threshold": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold"
+        }
+      },
+      "title": "AlarmTrigger",
+      "type": "object"
+    },
+    "Dimension": {
+      "properties": {
+        "name": {
+          "maxLength": 255,
+          "title": "Name",
+          "type": "string"
+        },
+        "value": {
+          "maxLength": 1024,
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "title": "Dimension",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/kogunlowo123/self-healing-infrastructure-agents/schemas/cloudwatch-alarm.message.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "AWSAccountId": {
+      "pattern": "^\\d{12}$",
+      "title": "Awsaccountid",
+      "type": "string"
+    },
+    "AlarmArn": {
+      "maxLength": 1024,
+      "title": "Alarmarn",
+      "type": "string"
+    },
+    "AlarmDescription": {
+      "anyOf": [
+        {
+          "maxLength": 1024,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Alarmdescription"
+    },
+    "AlarmName": {
+      "maxLength": 255,
+      "minLength": 1,
+      "title": "Alarmname",
+      "type": "string"
+    },
+    "NewStateReason": {
+      "default": "",
+      "maxLength": 4000,
+      "title": "Newstatereason",
+      "type": "string"
+    },
+    "NewStateValue": {
+      "title": "Newstatevalue",
+      "type": "string"
+    },
+    "OldStateValue": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Oldstatevalue"
+    },
+    "Region": {
+      "maxLength": 100,
+      "title": "Region",
+      "type": "string"
+    },
+    "StateChangeTime": {
+      "format": "date-time",
+      "title": "Statechangetime",
+      "type": "string"
+    },
+    "Trigger": {
+      "$ref": "#/$defs/AlarmTrigger"
+    }
+  },
+  "required": [
+    "AlarmName",
+    "AWSAccountId",
+    "NewStateValue",
+    "StateChangeTime",
+    "Region",
+    "AlarmArn"
+  ],
+  "title": "CloudWatchAlarm",
+  "type": "object"
+}

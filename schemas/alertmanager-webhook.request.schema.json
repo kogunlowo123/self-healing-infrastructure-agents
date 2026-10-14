@@ -1,0 +1,160 @@
+{
+  "$defs": {
+    "AlertStatus": {
+      "enum": [
+        "firing",
+        "resolved"
+      ],
+      "title": "AlertStatus",
+      "type": "string"
+    },
+    "AlertmanagerAlert": {
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "maxProperties": 64,
+          "title": "Annotations",
+          "type": "object"
+        },
+        "endsAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endsat"
+        },
+        "fingerprint": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Fingerprint",
+          "type": "string"
+        },
+        "generatorURL": {
+          "anyOf": [
+            {
+              "maxLength": 4096,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Generatorurl"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "maxProperties": 64,
+          "title": "Labels",
+          "type": "object"
+        },
+        "startsAt": {
+          "format": "date-time",
+          "title": "Startsat",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/AlertStatus"
+        }
+      },
+      "required": [
+        "status",
+        "startsAt",
+        "fingerprint"
+      ],
+      "title": "AlertmanagerAlert",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/kogunlowo123/self-healing-infrastructure-agents/schemas/alertmanager-webhook.request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Body Alertmanager POSTs to a ``webhook_configs`` receiver.",
+  "properties": {
+    "alerts": {
+      "items": {
+        "$ref": "#/$defs/AlertmanagerAlert"
+      },
+      "maxItems": 500,
+      "minItems": 1,
+      "title": "Alerts",
+      "type": "array"
+    },
+    "commonAnnotations": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Commonannotations",
+      "type": "object"
+    },
+    "commonLabels": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Commonlabels",
+      "type": "object"
+    },
+    "externalURL": {
+      "anyOf": [
+        {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Externalurl"
+    },
+    "groupKey": {
+      "maxLength": 4096,
+      "title": "Groupkey",
+      "type": "string"
+    },
+    "groupLabels": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Grouplabels",
+      "type": "object"
+    },
+    "receiver": {
+      "maxLength": 500,
+      "title": "Receiver",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/AlertStatus"
+    },
+    "truncatedAlerts": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Truncatedalerts",
+      "type": "integer"
+    },
+    "version": {
+      "pattern": "^4$",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "version",
+    "groupKey",
+    "status",
+    "receiver",
+    "alerts"
+  ],
+  "title": "AlertmanagerWebhook",
+  "type": "object"
+}

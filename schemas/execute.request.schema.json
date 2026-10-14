@@ -1,0 +1,15 @@
+{
+  "$id": "https://github.com/kogunlowo123/self-healing-infrastructure-agents/schemas/execute.request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "dry_run": {
+      "default": true,
+      "description": "Server-side dry run unless explicitly set to false",
+      "title": "Dry Run",
+      "type": "boolean"
+    }
+  },
+  "title": "ExecuteRequest",
+  "type": "object"
+}

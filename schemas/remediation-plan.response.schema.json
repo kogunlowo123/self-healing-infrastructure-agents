@@ -1,0 +1,684 @@
+{
+  "$defs": {
+    "ActionKind": {
+      "description": "Remediation actions. Values double as policy actions and fabric scopes.",
+      "enum": [
+        "k8s:restart",
+        "k8s:scale",
+        "k8s:rollout-undo",
+        "k8s:cordon",
+        "k8s:uncordon",
+        "terraform:apply"
+      ],
+      "title": "ActionKind",
+      "type": "string"
+    },
+    "ActionSpec": {
+      "additionalProperties": false,
+      "description": "What to do, to what, and why.",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ActionKind"
+        },
+        "plan_file": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "terraform:apply only; saved plan file",
+          "title": "Plan File"
+        },
+        "reason": {
+          "maxLength": 2000,
+          "minLength": 3,
+          "title": "Reason",
+          "type": "string"
+        },
+        "replicas": {
+          "anyOf": [
+            {
+              "maximum": 1000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "k8s:scale only",
+          "title": "Replicas"
+        },
+        "rollback_stack": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "terraform:apply only; stack directory holding the last-known-good configuration (same backend). If the post-check fails it is planned fresh and applied only when that plan is non-destructive",
+          "title": "Rollback Stack"
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "reason"
+      ],
+      "title": "ActionSpec",
+      "type": "object"
+    },
+    "Approval": {
+      "properties": {
+        "approver": {
+          "title": "Approver",
+          "type": "string"
+        },
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "comment": {
+          "title": "Comment",
+          "type": "string"
+        },
+        "decision": {
+          "$ref": "#/$defs/ApprovalDecision"
+        },
+        "plan_digest": {
+          "title": "Plan Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "approver",
+        "decision",
+        "comment",
+        "plan_digest",
+        "at"
+      ],
+      "title": "Approval",
+      "type": "object"
+    },
+    "ApprovalDecision": {
+      "enum": [
+        "approve",
+        "reject"
+      ],
+      "title": "ApprovalDecision",
+      "type": "string"
+    },
+    "ChangeAction": {
+      "enum": [
+        "no-op",
+        "create",
+        "read",
+        "update",
+        "delete",
+        "replace"
+      ],
+      "title": "ChangeAction",
+      "type": "string"
+    },
+    "Decision": {
+      "description": "Outcome of a policy or security evaluation.",
+      "enum": [
+        "allow",
+        "deny",
+        "require_approval"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "ExecutionMode": {
+      "enum": [
+        "dry_run",
+        "live"
+      ],
+      "title": "ExecutionMode",
+      "type": "string"
+    },
+    "ExecutionOutcome": {
+      "enum": [
+        "succeeded",
+        "failed",
+        "rolled_back",
+        "rollback_failed"
+      ],
+      "title": "ExecutionOutcome",
+      "type": "string"
+    },
+    "ExecutionRecord": {
+      "properties": {
+        "actor": {
+          "title": "Actor",
+          "type": "string"
+        },
+        "finished_at": {
+          "format": "date-time",
+          "title": "Finished At",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "mode": {
+          "$ref": "#/$defs/ExecutionMode"
+        },
+        "outcome": {
+          "$ref": "#/$defs/ExecutionOutcome"
+        },
+        "snapshot": {
+          "additionalProperties": true,
+          "description": "Pre-change state used for rollback",
+          "title": "Snapshot",
+          "type": "object"
+        },
+        "started_at": {
+          "format": "date-time",
+          "title": "Started At",
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/StepResult"
+          },
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "mode",
+        "actor",
+        "started_at",
+        "finished_at",
+        "outcome",
+        "steps"
+      ],
+      "title": "ExecutionRecord",
+      "type": "object"
+    },
+    "PlanAnalysis": {
+      "description": "Risk view of a ``terraform show -json`` plan document.",
+      "properties": {
+        "applyable": {
+          "title": "Applyable",
+          "type": "boolean"
+        },
+        "blast_radius": {
+          "description": "Changed resources plus every resource that depends on them, transitively",
+          "items": {
+            "type": "string"
+          },
+          "title": "Blast Radius",
+          "type": "array"
+        },
+        "changes": {
+          "items": {
+            "$ref": "#/$defs/ResourceChange"
+          },
+          "title": "Changes",
+          "type": "array"
+        },
+        "counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Counts",
+          "type": "object"
+        },
+        "destructive": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Destructive",
+          "type": "array"
+        },
+        "drifted": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Drifted",
+          "type": "array"
+        },
+        "errored": {
+          "title": "Errored",
+          "type": "boolean"
+        },
+        "findings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Findings",
+          "type": "array"
+        },
+        "format_version": {
+          "title": "Format Version",
+          "type": "string"
+        },
+        "plan_digest": {
+          "title": "Plan Digest",
+          "type": "string"
+        },
+        "protection_disabled": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Protection Disabled",
+          "type": "array"
+        },
+        "risk": {
+          "$ref": "#/$defs/RiskLevel"
+        },
+        "risk_score": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Risk Score",
+          "type": "integer"
+        },
+        "security_changes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Security Changes",
+          "type": "array"
+        },
+        "stateful_deletes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Stateful Deletes",
+          "type": "array"
+        },
+        "stateful_replacements": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Stateful Replacements",
+          "type": "array"
+        },
+        "terraform_version": {
+          "title": "Terraform Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "plan_digest",
+        "format_version",
+        "terraform_version",
+        "applyable",
+        "errored",
+        "changes",
+        "counts",
+        "destructive",
+        "stateful_deletes",
+        "stateful_replacements",
+        "security_changes",
+        "protection_disabled",
+        "drifted",
+        "blast_radius",
+        "risk_score",
+        "risk",
+        "findings"
+      ],
+      "title": "PlanAnalysis",
+      "type": "object"
+    },
+    "PlanStatus": {
+      "enum": [
+        "denied",
+        "proposed",
+        "awaiting_approval",
+        "approved",
+        "rejected",
+        "executing",
+        "succeeded",
+        "rolled_back",
+        "failed",
+        "expired"
+      ],
+      "title": "PlanStatus",
+      "type": "string"
+    },
+    "PolicyOutcome": {
+      "properties": {
+        "decision": {
+          "$ref": "#/$defs/Decision"
+        },
+        "evaluated_at": {
+          "format": "date-time",
+          "title": "Evaluated At",
+          "type": "string"
+        },
+        "facts": {
+          "additionalProperties": true,
+          "title": "Facts",
+          "type": "object"
+        },
+        "matched_rules": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Matched Rules",
+          "type": "array"
+        },
+        "policy_digest": {
+          "title": "Policy Digest",
+          "type": "string"
+        },
+        "policy_name": {
+          "title": "Policy Name",
+          "type": "string"
+        },
+        "policy_version": {
+          "title": "Policy Version",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "decision",
+        "matched_rules",
+        "policy_name",
+        "policy_version",
+        "policy_digest",
+        "reason",
+        "evaluated_at"
+      ],
+      "title": "PolicyOutcome",
+      "type": "object"
+    },
+    "ResourceChange": {
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/ChangeAction"
+        },
+        "address": {
+          "title": "Address",
+          "type": "string"
+        },
+        "changed_attributes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Changed Attributes",
+          "type": "array"
+        },
+        "protection_disabled": {
+          "default": [],
+          "description": "Safety attributes this change turns off",
+          "items": {
+            "type": "string"
+          },
+          "title": "Protection Disabled",
+          "type": "array"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "replace_paths": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Replace Paths",
+          "type": "array"
+        },
+        "security_sensitive": {
+          "title": "Security Sensitive",
+          "type": "boolean"
+        },
+        "stateful": {
+          "title": "Stateful",
+          "type": "boolean"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "address",
+        "type",
+        "provider",
+        "action",
+        "stateful",
+        "security_sensitive"
+      ],
+      "title": "ResourceChange",
+      "type": "object"
+    },
+    "RiskLevel": {
+      "description": "Action risk tier. Ordered so policies can compare with ``>=``.",
+      "enum": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "title": "RiskLevel",
+      "type": "integer"
+    },
+    "StepResult": {
+      "properties": {
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "ok",
+        "at"
+      ],
+      "title": "StepResult",
+      "type": "object"
+    },
+    "Target": {
+      "additionalProperties": false,
+      "description": "The infrastructure object an alert is about and a remediation acts on.",
+      "properties": {
+        "cluster": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cluster"
+        },
+        "environment": {
+          "default": "production",
+          "maxLength": 40,
+          "minLength": 1,
+          "title": "Environment",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/TargetKind"
+        },
+        "name": {
+          "maxLength": 253,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "maxLength": 63,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Namespace"
+        }
+      },
+      "required": [
+        "kind",
+        "name"
+      ],
+      "title": "Target",
+      "type": "object"
+    },
+    "TargetKind": {
+      "enum": [
+        "deployment",
+        "node",
+        "terraform_stack",
+        "cloud_resource"
+      ],
+      "title": "TargetKind",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/kogunlowo123/self-healing-infrastructure-agents/schemas/remediation-plan.response.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A proposed remediation, its policy outcome, approvals and executions.",
+  "properties": {
+    "action": {
+      "$ref": "#/$defs/ActionSpec"
+    },
+    "approvals": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Approval"
+      },
+      "title": "Approvals",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "digest": {
+      "default": "",
+      "title": "Digest",
+      "type": "string"
+    },
+    "executions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ExecutionRecord"
+      },
+      "title": "Executions",
+      "type": "array"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "incident_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Incident Id"
+    },
+    "policy": {
+      "$ref": "#/$defs/PolicyOutcome"
+    },
+    "requested_by": {
+      "title": "Requested By",
+      "type": "string"
+    },
+    "required_approvals": {
+      "maximum": 5,
+      "minimum": 0,
+      "title": "Required Approvals",
+      "type": "integer"
+    },
+    "risk": {
+      "$ref": "#/$defs/RiskLevel"
+    },
+    "status": {
+      "$ref": "#/$defs/PlanStatus"
+    },
+    "terraform": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PlanAnalysis"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "version": {
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "action",
+    "requested_by",
+    "created_at",
+    "updated_at",
+    "expires_at",
+    "status",
+    "risk",
+    "policy",
+    "required_approvals"
+  ],
+  "title": "RemediationPlan",
+  "type": "object"
+}

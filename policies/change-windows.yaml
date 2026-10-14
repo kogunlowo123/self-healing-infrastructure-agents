@@ -1,0 +1,21 @@
+# Change calendar for live Terraform changes and release rollbacks.
+# Environments without an entry are always open. Times are local to the
+# window's IANA time zone; a window whose end is earlier than its start
+# crosses midnight. Freezes override every window.
+name: change-windows
+version: "2026.10.0"
+windows:
+  production:
+    - {days: [tue, wed, thu], start: "09:00", end: "16:00", timezone: "America/New_York"}
+    - {days: [sun], start: "22:00", end: "02:00", timezone: "UTC"}
+  staging:
+    - {days: [mon, tue, wed, thu, fri], start: "06:00", end: "22:00", timezone: "UTC"}
+freezes:
+  - start: "2026-11-25T00:00:00Z"
+    end: "2026-12-01T00:00:00Z"
+    reason: "Peak traffic period (Thanksgiving through Cyber Monday)"
+    environments: [production]
+  - start: "2026-12-18T00:00:00Z"
+    end: "2027-01-04T00:00:00Z"
+    reason: "Year-end freeze"
+    environments: [production, staging]

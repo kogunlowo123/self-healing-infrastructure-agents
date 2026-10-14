@@ -1,0 +1,462 @@
+{
+  "configuration": {
+    "provider_config": {
+      "terraform": {
+        "full_name": "registry.terraform.io/hashicorp/aws",
+        "name": "terraform"
+      }
+    },
+    "root_module": {
+      "module_calls": {
+        "network": {
+          "expressions": {
+            "db_ref": {
+              "references": [
+                "aws_db_instance.orders.id",
+                "aws_db_instance.orders"
+              ]
+            }
+          },
+          "module": {
+            "resources": [
+              {
+                "address": "aws_route53_record.orders",
+                "expressions": {
+                  "input": {
+                    "references": [
+                      "var.db_ref"
+                    ]
+                  }
+                },
+                "mode": "managed",
+                "name": "orders",
+                "provider_config_key": "terraform",
+                "schema_version": 0,
+                "type": "aws_route53_record"
+              }
+            ],
+            "variables": {
+              "db_ref": {}
+            }
+          },
+          "source": "./network"
+        }
+      },
+      "resources": [
+        {
+          "address": "aws_cloudwatch_metric_alarm.orders_storage",
+          "expressions": {
+            "input": {
+              "references": [
+                "aws_db_instance.orders.output",
+                "aws_db_instance.orders"
+              ]
+            }
+          },
+          "mode": "managed",
+          "name": "orders_storage",
+          "provider_config_key": "terraform",
+          "schema_version": 0,
+          "type": "aws_cloudwatch_metric_alarm"
+        },
+        {
+          "address": "aws_db_instance.orders",
+          "expressions": {
+            "input": {
+              "references": [
+                "var.size"
+              ]
+            },
+            "triggers_replace": {
+              "constant_value": [
+                "postgres-17"
+              ]
+            }
+          },
+          "mode": "managed",
+          "name": "orders",
+          "provider_config_key": "terraform",
+          "schema_version": 0,
+          "type": "aws_db_instance"
+        }
+      ],
+      "variables": {
+        "size": {
+          "default": 100
+        }
+      }
+    }
+  },
+  "errored": false,
+  "format_version": "1.2",
+  "planned_values": {
+    "root_module": {
+      "child_modules": [
+        {
+          "address": "module.network",
+          "resources": [
+            {
+              "address": "module.network.aws_route53_record.orders",
+              "mode": "managed",
+              "name": "orders",
+              "provider_name": "registry.terraform.io/hashicorp/aws",
+              "schema_version": 0,
+              "sensitive_values": {},
+              "type": "aws_route53_record",
+              "values": {
+                "id": "e2309553-95aa-22de-296a-17a533204b96",
+                "triggers_replace": null
+              }
+            }
+          ]
+        }
+      ],
+      "resources": [
+        {
+          "address": "aws_cloudwatch_metric_alarm.orders_storage",
+          "mode": "managed",
+          "name": "orders_storage",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "sensitive_values": {
+            "input": {
+              "watches": {}
+            },
+            "output": {}
+          },
+          "type": "aws_cloudwatch_metric_alarm",
+          "values": {
+            "id": "b84ebc40-3f3c-4225-2f74-3536492b0ddc",
+            "input": {},
+            "triggers_replace": null
+          }
+        },
+        {
+          "address": "aws_db_instance.orders",
+          "mode": "managed",
+          "name": "orders",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "sensitive_values": {
+            "input": {},
+            "output": {},
+            "triggers_replace": [
+              false
+            ]
+          },
+          "type": "aws_db_instance",
+          "values": {
+            "input": {
+              "allocated_storage": 100,
+              "engine": "postgres"
+            },
+            "triggers_replace": [
+              "postgres-17"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "prior_state": {
+    "format_version": "1.0",
+    "terraform_version": "1.7.5",
+    "values": {
+      "root_module": {
+        "child_modules": [
+          {
+            "address": "module.network",
+            "resources": [
+              {
+                "address": "module.network.aws_route53_record.orders",
+                "depends_on": [
+                  "aws_db_instance.orders"
+                ],
+                "mode": "managed",
+                "name": "orders",
+                "provider_name": "registry.terraform.io/hashicorp/aws",
+                "schema_version": 0,
+                "sensitive_values": {},
+                "type": "aws_route53_record",
+                "values": {
+                  "id": "e2309553-95aa-22de-296a-17a533204b96",
+                  "input": "3819d8d5-79c4-7687-ee4e-8daac44754fc",
+                  "output": "3819d8d5-79c4-7687-ee4e-8daac44754fc",
+                  "triggers_replace": null
+                }
+              }
+            ]
+          }
+        ],
+        "resources": [
+          {
+            "address": "aws_cloudwatch_metric_alarm.orders_storage",
+            "depends_on": [
+              "aws_db_instance.orders"
+            ],
+            "mode": "managed",
+            "name": "orders_storage",
+            "provider_name": "registry.terraform.io/hashicorp/aws",
+            "schema_version": 0,
+            "sensitive_values": {
+              "input": {
+                "watches": {}
+              },
+              "output": {
+                "watches": {}
+              }
+            },
+            "type": "aws_cloudwatch_metric_alarm",
+            "values": {
+              "id": "b84ebc40-3f3c-4225-2f74-3536492b0ddc",
+              "input": {
+                "watches": {
+                  "allocated_storage": 100,
+                  "engine": "postgres"
+                }
+              },
+              "output": {
+                "watches": {
+                  "allocated_storage": 100,
+                  "engine": "postgres"
+                }
+              },
+              "triggers_replace": null
+            }
+          },
+          {
+            "address": "aws_db_instance.orders",
+            "mode": "managed",
+            "name": "orders",
+            "provider_name": "registry.terraform.io/hashicorp/aws",
+            "schema_version": 0,
+            "sensitive_values": {
+              "input": {},
+              "output": {},
+              "triggers_replace": [
+                false
+              ]
+            },
+            "type": "aws_db_instance",
+            "values": {
+              "id": "3819d8d5-79c4-7687-ee4e-8daac44754fc",
+              "input": {
+                "allocated_storage": 100,
+                "engine": "postgres"
+              },
+              "output": {
+                "allocated_storage": 100,
+                "engine": "postgres"
+              },
+              "triggers_replace": [
+                "postgres-16"
+              ]
+            }
+          },
+          {
+            "address": "aws_s3_bucket.exports",
+            "mode": "managed",
+            "name": "exports",
+            "provider_name": "registry.terraform.io/hashicorp/aws",
+            "schema_version": 0,
+            "sensitive_values": {},
+            "type": "aws_s3_bucket",
+            "values": {
+              "id": "c9e0d02d-5be8-c55b-c1a1-5a926a773be0",
+              "input": "retired",
+              "output": "retired",
+              "triggers_replace": null
+            }
+          }
+        ]
+      }
+    }
+  },
+  "relevant_attributes": [
+    {
+      "attribute": [
+        "output"
+      ],
+      "resource": "aws_db_instance.orders"
+    },
+    {
+      "attribute": [
+        "id"
+      ],
+      "resource": "aws_db_instance.orders"
+    }
+  ],
+  "resource_changes": [
+    {
+      "address": "aws_cloudwatch_metric_alarm.orders_storage",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "after": {
+          "id": "b84ebc40-3f3c-4225-2f74-3536492b0ddc",
+          "input": {},
+          "triggers_replace": null
+        },
+        "after_sensitive": {
+          "input": {
+            "watches": {}
+          },
+          "output": {}
+        },
+        "after_unknown": {
+          "input": {
+            "watches": true
+          },
+          "output": true
+        },
+        "before": {
+          "id": "b84ebc40-3f3c-4225-2f74-3536492b0ddc",
+          "input": {
+            "watches": {
+              "allocated_storage": 100,
+              "engine": "postgres"
+            }
+          },
+          "output": {
+            "watches": {
+              "allocated_storage": 100,
+              "engine": "postgres"
+            }
+          },
+          "triggers_replace": null
+        },
+        "before_sensitive": {
+          "input": {
+            "watches": {}
+          },
+          "output": {
+            "watches": {}
+          }
+        }
+      },
+      "mode": "managed",
+      "name": "orders_storage",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "type": "aws_cloudwatch_metric_alarm"
+    },
+    {
+      "action_reason": "replace_because_cannot_update",
+      "address": "aws_db_instance.orders",
+      "change": {
+        "actions": [
+          "delete",
+          "create"
+        ],
+        "after": {
+          "allocated_storage": 100,
+          "backup_retention_period": 14,
+          "deletion_protection": true,
+          "engine": "postgres",
+          "engine_version": "17.2",
+          "identifier": "orders",
+          "skip_final_snapshot": false,
+          "storage_encrypted": true
+        },
+        "after_sensitive": {
+          "input": {},
+          "output": {},
+          "triggers_replace": [
+            false
+          ]
+        },
+        "after_unknown": {
+          "id": true,
+          "input": {},
+          "output": true,
+          "triggers_replace": [
+            false
+          ]
+        },
+        "before": {
+          "allocated_storage": 100,
+          "backup_retention_period": 14,
+          "deletion_protection": true,
+          "engine": "postgres",
+          "engine_version": "16.4",
+          "identifier": "orders",
+          "skip_final_snapshot": false,
+          "storage_encrypted": true
+        },
+        "before_sensitive": {
+          "input": {},
+          "output": {},
+          "triggers_replace": [
+            false
+          ]
+        },
+        "replace_paths": [
+          [
+            "engine_version"
+          ]
+        ]
+      },
+      "mode": "managed",
+      "name": "orders",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "type": "aws_db_instance"
+    },
+    {
+      "action_reason": "delete_because_no_resource_config",
+      "address": "aws_s3_bucket.exports",
+      "change": {
+        "actions": [
+          "delete"
+        ],
+        "after": null,
+        "after_sensitive": false,
+        "after_unknown": {},
+        "before": {
+          "bucket": "orders-exports",
+          "force_destroy": false
+        },
+        "before_sensitive": {}
+      },
+      "mode": "managed",
+      "name": "exports",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "type": "aws_s3_bucket"
+    },
+    {
+      "address": "module.network.aws_route53_record.orders",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "after": {
+          "id": "e2309553-95aa-22de-296a-17a533204b96",
+          "triggers_replace": null
+        },
+        "after_sensitive": {},
+        "after_unknown": {
+          "input": true,
+          "output": true
+        },
+        "before": {
+          "id": "e2309553-95aa-22de-296a-17a533204b96",
+          "input": "3819d8d5-79c4-7687-ee4e-8daac44754fc",
+          "output": "3819d8d5-79c4-7687-ee4e-8daac44754fc",
+          "triggers_replace": null
+        },
+        "before_sensitive": {}
+      },
+      "mode": "managed",
+      "module_address": "module.network",
+      "name": "orders",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "type": "aws_route53_record"
+    }
+  ],
+  "terraform_version": "1.7.5",
+  "timestamp": "2026-10-14T15:00:10Z",
+  "variables": {
+    "size": {
+      "value": 100
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$id": "https://github.com/kogunlowo123/self-healing-infrastructure-agents/schemas/analyze-plan.request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "plan": {
+      "additionalProperties": true,
+      "description": "Output of `terraform show -json <planfile>`",
+      "title": "Plan",
+      "type": "object"
+    }
+  },
+  "required": [
+    "plan"
+  ],
+  "title": "AnalyzePlanRequest",
+  "type": "object"
+}

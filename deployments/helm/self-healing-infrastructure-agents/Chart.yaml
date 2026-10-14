@@ -1,0 +1,13 @@
+apiVersion: v2
+name: self-healing-infrastructure-agents
+description: Self-healing cloud infrastructure agents with policy-validated, approval-gated remediation and automatic rollback
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.27.0-0"
+home: https://github.com/kogunlowo123/self-healing-infrastructure-agents
+sources:
+  - https://github.com/kogunlowo123/self-healing-infrastructure-agents
+maintainers:
+  - name: kogunlowo123
+    url: https://github.com/kogunlowo123
