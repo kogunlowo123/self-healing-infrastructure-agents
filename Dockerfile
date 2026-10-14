@@ -5,7 +5,7 @@
 # against a Go standard library with known, fixed vulnerabilities. The tag is
 # verified against its commit SHA and module downloads against go.sum and the
 # Go checksum database.
-FROM golang:1.26.9-trixie AS terraform
+FROM golang:1.27.1-trixie AS terraform
 ARG TERRAFORM_VERSION=1.16.6
 ARG TERRAFORM_COMMIT=7b8f1669b95119ac6021e05c9d10eae7cf75f60b
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOFLAGS=-mod=readonly
