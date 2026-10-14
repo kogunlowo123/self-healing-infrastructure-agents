@@ -35,7 +35,7 @@ jobs:
           test "$(uv run python -c 'import self_healing_infrastructure_agents as m; print(m.__version__)')" = "$version"
           grep -q "^appVersion: \"$version\"" "$CHART/Chart.yaml"
           grep -q "^version: $version" "$CHART/Chart.yaml"
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
