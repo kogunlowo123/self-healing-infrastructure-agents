@@ -13,7 +13,7 @@ RUN git clone --depth 1 --branch "v${TERRAFORM_VERSION}" https://github.com/hash
 WORKDIR /src/terraform
 RUN go build -trimpath -ldflags "-s -w -X github.com/hashicorp/terraform/version.dev=no" -o /opt/terraform/terraform .  && /opt/terraform/terraform version
 
-FROM python:3.12.15-slim-trixie AS build
+FROM python:3.14.8-slim-trixie AS build
 COPY --from=ghcr.io/astral-sh/uv:0.12.7 /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
 RUN apt-get update  && apt-get install -y --no-install-recommends git ca-certificates  && rm -rf /var/lib/apt/lists/*
@@ -24,7 +24,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY src ./src
 RUN uv sync --frozen --no-dev --no-editable
 
-FROM python:3.12.15-slim-trixie AS runtime
+FROM python:3.14.8-slim-trixie AS runtime
 RUN apt-get update  && apt-get upgrade -y --no-install-recommends  && rm -rf /var/lib/apt/lists/*  && groupadd --system --gid 10001 heal \
  && useradd --system --uid 10001 --gid heal --home-dir /nonexistent --shell /usr/sbin/nologin heal \
  && mkdir -p /var/lib/self-healing-agents/audit /var/lib/self-healing-agents/stacks \
